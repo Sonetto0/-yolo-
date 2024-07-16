@@ -57,6 +57,17 @@ class_names = {
     60: "皖", 61: "湘", 62: "新", 63: "学", 64: "渝", 65: "豫", 66: "粤", 67: "云", 68: "浙", 69: "藏"
 }
 
+
+class_yan_names = {
+    0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9',
+    10: 'a', 11: 'b', 12: 'c', 13: 'd', 14: 'e', 15: 'f', 16: 'g', 17: 'h', 18: 'i', 19: 'j',
+    20: 'k', 21: 'l', 22: 'm', 23: 'n', 24: 'o', 25: 'p', 26: 'q', 27: 'r', 28: 's', 29: 't',
+    30: 'u', 31: 'v', 32: 'w', 33: 'x', 34: 'y', 35: 'z', 36: 'A', 37: 'B', 38: 'C', 39: 'DD',
+    40: 'E', 41: 'F', 42: 'G', 43: 'H', 44: 'I', 45: 'J', 46: 'K', 47: 'L', 48: 'M', 49: 'N',
+    50: 'O', 51: 'P', 52: 'Q', 53: 'R', 54: 'S', 55: 'T', 56: 'U', 57: 'V', 58: 'W', 59: 'X',
+    60: 'Y', 61: 'Z', 62: 'D'
+}
+
 # def print_sorted_classes(data, class_names):
 #     # Sort data by the first column (ascending order)
 #     sorted_data = data[data[:, 0].argsort()]
@@ -134,6 +145,46 @@ def get_predict_results(file_path):
     return output_string
 
 
+def get_yan_predict_results(file_path):
+    # 读取文件内容
+
+
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    # 解析每一行数据，提取类别和数据，并存入列表
+    data = []
+    for line in lines:
+        parts = line.strip().split()
+        if len(parts) > 1:
+            category = int(parts[0])
+            if category != 0:  # 排除类别为0的数据
+                data.append((category, line.strip()))
+
+    data_sorted = sorted(data, key=lambda x: -float(x[1].split()[5]))
+
+    # Keep up to 7 rows if more than 7 rows exist
+    if len(data_sorted) > 7:
+        data_sorted = data_sorted[:7]
+
+    # 按照第二个数据（索引为1）从小到大排序
+    data_sorted = sorted(data_sorted, key=lambda x: float(x[1].split()[1]))
+
+    # 映射类别为字符串
+    mapped_categories = [class_yan_names[category] for category, _ in data_sorted]
+
+    # 输出映射后的结果，拼接成一个字符串
+    output_string = ' '.join(mapped_categories)
+
+    output_string = output_string.replace(' ', '')
+
+    # 打印输出结果
+    # print(output_string)
+
+    # print(file_path)
+
+    return output_string
+
 def get_image_paths(folder_path):
     image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
     image_paths = []
@@ -154,6 +205,21 @@ def predict_result():
 
     for txt_path in txt_paths:
         predict_results.append(get_predict_results(txt_path))
+
+    print(predict_results)
+    # print(len(predict_results))
+    return predict_results
+
+
+def predict_yan_result():
+    folder_path = r'D:\shixun\sss\runs\detect\predict\labels'  # 替换为实际的文件夹路径
+    txt_paths = get_txt_paths(folder_path)
+
+    print(txt_paths)
+    predict_results = []
+
+    for txt_path in txt_paths:
+        predict_results.append(get_yan_predict_results(txt_path))
 
     print(predict_results)
     # print(len(predict_results))
@@ -192,5 +258,5 @@ def accuracy(folder_path):
         return 0
 
 if __name__ == '__main__':
-    folder_path = r'D:\shixun\sss\Test'
-    accuracy(folder_path)
+    r = predict_yan_result()
+    # print(r)

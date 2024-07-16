@@ -7,6 +7,8 @@ import numpy as np
 
 import torch
 
+from perspective_transform import  perspective_t
+
 
 # class_names = {
 #     0: "plate", 1: "0", 2: "1", 3: "2", 4: "3", 5: "4", 6: "5", 7: "6", 8: "7", 9: "8",
@@ -187,7 +189,23 @@ def predict_i(model_path, predict_img_path):
 
     img = Image.open(predict_img_path)
     # model.predict(img, save=True, imgsz=320, conf=0.5)
-    result = model.predict(img, save=True, imgsz=320, conf=0.25, hide_conf=True)
+    result = model.predict(img, save=True, imgsz=320, conf=0.25, hide_conf=True, save_txt=True, save_conf=True)
+
+    # result.show()
+    return result[0].speed
+
+
+def predict_i_s(model_path, predict_img_path):
+    delete_folder(r'D:\shixun\sss\runs\detect\predict')
+    # model = YOLO("yolov8n.pt")  # load an official model
+    # model = YOLO(r"D:\shixun\sss\model\n100_train2.pt")  # load a custom model
+
+    # model = YOLO(r"D:\shixun\sss\runs\detect\train4\weights\best.pt")
+    model = YOLO(model_path)
+
+    # model.predict(img, save=True, imgsz=320, conf=0.5)
+    img = perspective_t(predict_img_path)
+    result = model.predict(img, save=True, imgsz=320, conf=0.25, hide_conf=True, save_txt=True, save_conf=True)
 
     # result.show()
     return result[0].speed
@@ -210,19 +228,41 @@ def predict_v(model_path, predict_video_path):
 
 
 
+def predict_y(model_path, predict_img_path):
+    delete_folder(r'D:\shixun\sss\runs\detect\predict')
+    # model = YOLO("yolov8n.pt")  # load an official model
+    # model = YOLO(r"D:\shixun\sss\model\n100_train2.pt")  # load a custom model
+
+    # model = YOLO(r"D:\shixun\sss\runs\detect\train4\weights\best.pt")
+    model = YOLO(model_path)
+
+    img = Image.open(predict_img_path)
+    # model.predict(img, save=True, imgsz=320, conf=0.5)
+    result = model.predict(img, save=True, imgsz=640, conf=0.25, save_txt=True, save_conf=True)
+
+    # result.show()
+    return result[0].speed
+
+
+
+
 
 if __name__ == '__main__':
     model_path = r"D:\shixun\sss\runs\detect\train9\weights\best.pt"
-    predict_file_path = r"D:\shixun\sss\Test"
-    predict_img_path = r"D:\shixun\sss\Test\浙B8R860.jpg"
-    predict_video_path = r"D:\Download\video0.mp4"
+    # predict_file_path = r"D:\shixun\sss\Test"
+    predict_img_path = r"D:\Download\rotatedimage.jpg"
+    # predict_video_path = r"D:\Download\video0.mp4"
+    #
+    # # predict_v(model_path, predict_video_path)
+    #
+    predict_i_s(model_path, predict_img_path)
+    # # print(f"Preprocess time: {l['preprocess']:.2f} ms")
+    # # print(f"Inference time: {l['inference']:.2f} ms")
+    # # print(f"Postprocess time: {l['postprocess']:.2f} ms")
+    #
+    # l = predict(model_path, predict_file_path)
+    # print(l)
 
-    # predict_v(model_path, predict_video_path)
-
-    # l = predict_i(model_path, predict_img_path)
-    # print(f"Preprocess time: {l['preprocess']:.2f} ms")
-    # print(f"Inference time: {l['inference']:.2f} ms")
-    # print(f"Postprocess time: {l['postprocess']:.2f} ms")
-
-    l = predict(model_path, predict_file_path)
-    print(l)
+    # model_path = r"D:\shixun\sss\runs\detect\train20\weights\best.pt"
+    # predict_img_path = r"D:\shixun\sss\Dataset0\images\train\000017.jpg"
+    # predict_y(model_path, predict_img_path)

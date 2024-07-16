@@ -1,6 +1,7 @@
 # coding:utf-8
 import os
 import sys
+import re
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSize, QUrl
@@ -8,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout
 
 from qfluentwidgets import ImageLabel, HorizontalFlipView, BodyLabel, TitleLabel, CaptionLabel, LargeTitleLabel, \
-    StrongBodyLabel, PushButton, FluentIcon, ComboBox, PrimaryPushButton, MessageBox, TogglePushButton
+    StrongBodyLabel, PushButton, FluentIcon, ComboBox, PrimaryPushButton, MessageBox, TogglePushButton, CheckBox
 from qfluentwidgets.multimedia import VideoWidget
 from qframelesswindow import AcrylicWindow
 
@@ -18,8 +19,8 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtGui import QPixmap
 
-from predict import predict, predict_i, predict_v
-from result_test import get_image_paths, predict_result, accuracy
+from predict import predict, predict_i, predict_v, predict_i_s
+from result_test import get_image_paths, predict_result, accuracy, predict_yan_result
 from capture_show_test import CameraApp
 
 
@@ -41,8 +42,10 @@ class Window(AcrylicWindow):
         self.l_bodyLabel = None
         self.folder_bodyLabel = None
         self.predict_file_path = None
-        self.model_path = None
+        self.model_path = r"D:\shixun\sss\model\yan_v1.pt"
         self.camera_app = CameraApp()
+        self.mode = False
+        self.acc = 0.01
         # self.predictResult = []
 
         self.initUI()
@@ -60,6 +63,12 @@ class Window(AcrylicWindow):
         pushButton_ca.setFixedWidth(240)
 
         pushButton_ca.toggled.connect(lambda checked: self.openCamera(checked))
+
+        self.checkBox = CheckBox("Perspective Transform")
+        # Check the checkbox
+        self.checkBox.setChecked(False)
+        # Listen for checkbox state change signals
+        self.checkBox.stateChanged.connect(lambda: print(self.checkBox.isChecked()))
 
         self.folder_bodyLabel = StrongBodyLabel()
 
@@ -80,7 +89,7 @@ class Window(AcrylicWindow):
 
 
 
-        self.bodyLabel = StrongBodyLabel()
+        # self.bodyLabel = StrongBodyLabel()
         # self.acc_bodyLabel = StrongBodyLabel()
         self.l_bodyLabel = BodyLabel()
 
@@ -110,6 +119,7 @@ class Window(AcrylicWindow):
         self.vBoxLayout.addWidget(self.folder_bodyLabel)
         self.vBoxLayout.addSpacing(5)
         # vBoxLayout.addSpacing(20)
+        self.vBoxLayout.addWidget(self.checkBox)
         self.vBoxLayout.addWidget(start_button, 0, Qt.AlignHCenter)
         # self.vBoxLayout.setSpacing(5)
         self.vBoxLayout.addWidget(self.l_bodyLabel)
@@ -122,7 +132,11 @@ class Window(AcrylicWindow):
         start_button.clicked.connect(self.start)
 
     def updatePageIndex(self, index):
-        self.bodyLabel.setText(f"预测结果：{self.predictResult[index]}")
+        # self.bodyLabel.setText(f"预测结果：{self.predictResult[index]}")
+        if self.acc > 0.01:
+            self.bodyLabel.setText(f" 预测结果：{self.predictResult[index]} \n 正确率为: {self.acc:.2%}")
+        else:
+            self.bodyLabel.setText(f" 预测结果：{self.predictResult[index]}")
 
     def msg(self, Filepath):
         m = QtWidgets.QFileDialog.getExistingDirectory(None, "选取文件夹", "D:/shixun/sss")  # 起始路径
@@ -138,18 +152,33 @@ class Window(AcrylicWindow):
 
 
     def openCamera(self, checked):
-
-        if checked:
-            self.camera_app.open_c()
+        if self.mode:
+            if checked:
+                self.camera_app.open_c()
+            else:
+                self.camera_app.close_c()
         else:
-            self.camera_app.close_c()
+            w = MessageBox("警告", "验证码识别模块目前只接受图片", self)
+            w.yesButton.setText("确认")
+            w.cancelButton.hide()
+            w.buttonLayout.insertStretch(1)
+            w.exec()
+
+
 
     def set_model_path(self, index):
         print(index)
         if index == 1:
-            self.model_path = r"D:\shixun\sss\runs\detect\train9\weights\last.pt"
+            self.model_path = "D:\shixun\sss\model\che_v1.pt"
+            self.mode = True
         elif index == 0:
-            self.model_path = None
+            self.model_path = r"D:\shixun\sss\model\yan_v1.pt"
+            self.mode =False
+
+
+    def has_chinese(self, text):
+        pattern = re.compile(r'[\u4e00-\u9fa5]')  # 中文字符的Unicode范围
+        return bool(pattern.search(text))
 
 
     def start(self):
@@ -172,91 +201,144 @@ class Window(AcrylicWindow):
             # self.view.deleteLater()
             # self.bodyLabel.setText('')
             # self.acc_bodyLabel.setText('')
-            if os.path.isdir(self.predict_file_path):
-                l = predict(self.model_path, self.predict_file_path)
-                speed = f"Preprocess time: {l['preprocess']:.2f} ms, Inference time: {l['inference']:.2f} ms, Postprocess time: {l['postprocess']:.2f} ms per image"
-                self.l_bodyLabel.setText(speed)
-                flipView = HorizontalFlipView()
-                flipView.currentIndexChanged.connect(lambda index: self.updatePageIndex(index))
-                flipView.setItemSize(QSize(640, 360))
-                flipView.setFixedSize(QSize(640, 360))
-                flipView.setBorderRadius(15)
+            if self.mode:
+                if os.path.isdir(self.predict_file_path):
+                    l = predict(self.model_path, self.predict_file_path)
+                    speed = f"Preprocess time: {l['preprocess']:.2f} ms, Inference time: {l['inference']:.2f} ms, Postprocess time: {l['postprocess']:.2f} ms per image"
+                    self.l_bodyLabel.setText(speed)
 
-                flipView.addImages(get_image_paths(self.predict_file_path))
-                self.imgLayout.addWidget(flipView)
+                    self.bodyLabel = StrongBodyLabel()
+                    flipView = HorizontalFlipView()
+                    flipView.currentIndexChanged.connect(lambda index: self.updatePageIndex(index))
+                    flipView.setItemSize(QSize(640, 360))
+                    flipView.setFixedSize(QSize(640, 360))
+                    flipView.setBorderRadius(15)
 
-                folder_path = r'D:\shixun\sss\Test'
-                self.predictResult = predict_result()
-                acc = accuracy(folder_path)
-                # print(type(acc))
-                # print(acc)
+                    flipView.addImages(get_image_paths(self.predict_file_path))
+                    self.imgLayout.addWidget(flipView)
 
-                # self.textLayout.addWidget(self.bodyLabel)
-                if acc > 0.1:
-                    # self.acc_bodyLabel.setText(f"")
-                    # self.imgLayout.addWidget(self.acc_bodyLabel)
-                    self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]} \n 正确率为: {acc:.2%}")
+                    folder_path = r'D:\shixun\sss\Test'
+                    self.predictResult = predict_result()
+                    self.acc = accuracy(folder_path)
+                    # print(type(acc))
+                    # print(acc)
+
+                    # self.textLayout.addWidget(self.bodyLabel)
+                    if self.acc > 0.01:
+                        # self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]} \n 正确率为: {self.acc:.2%}")
+                        if self.predictResult:
+                            self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]} \n 正确率为: {self.acc:.2%}")
+                        else:
+                            self.bodyLabel.setText("未检测到结果")
+                    else:
+                        # self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]}")
+                        if self.predictResult:
+                            self.bodyLabel.setText(f"预测结果：{self.predictResult[0]}")
+                        else:
+                            self.bodyLabel.setText("未检测到结果")
+                    self.imgLayout.addWidget(self.bodyLabel)
+                        # self.textLayout.addWidget(self.acc_bodyLabel)
+
+                    # self.imgLayout.addLayout(self.textLayout)
+                    # self.imgLayout.update()
+                    # self.vBoxLayout.addLayout(self.imgLayout)
+                    # self.vBoxLayout.addWidget(self.view, 0, Qt.AlignHCenter)
+
                 else:
-                    self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]}")
-                self.imgLayout.addWidget(self.bodyLabel)
-                    # self.textLayout.addWidget(self.acc_bodyLabel)
+                    _, file_extension = os.path.splitext(self.predict_file_path)
+                    file_extension = file_extension.lower()
+                    if file_extension == '.jpg':
+                        if self.checkBox.isChecked() and self.has_chinese(self.predict_file_path):
+                            w = MessageBox("提示", "使用perspective transform时不能包含中文路径", self)
+                            w.yesButton.setText("确认")
+                            w.cancelButton.hide()
+                            w.buttonLayout.insertStretch(1)
+                            w.exec()
+                        else:
+                            if self.checkBox.isChecked():
+                                l = predict_i_s(self.model_path, self.predict_file_path)
+                            else:
+                                l = predict_i(self.model_path, self.predict_file_path)
+                            speed = f"Preprocess time: {l['preprocess']:.2f} ms, Inference time: {l['inference']:.2f} ms, Postprocess time: {l['postprocess']:.2f} ms"
+                            self.l_bodyLabel.setText(speed)
+                            # self.flipView.addImages([r"D:\shixun\sss\runs\detect\predict\image0.jpg"])
+                            # self.vBoxLayout.addWidget(self.flipView, 0, Qt.AlignHCenter)
+                            # self.imgView.setPixmap(QPixmap(r"D:\shixun\sss\runs\detect\predict\image0.jpg"))
+                            # imgView = QLabel(self)
+                            # imgView.setFixedWidth(640)
+                            # pixmap = QPixmap(r"D:\shixun\sss\runs\detect\predict\image0.jpg")
+                            # imgView.setPixmap(pixmap.scaledToWidth(imgView.width()))
+                            # self.view = imgView
+                            # self.vBoxLayout.addWidget(self.view, 0, Qt.AlignLeft)
+                            self.bodyLabel = StrongBodyLabel()
+                            imgview = QLabel(self)
+                            imgview.setFixedWidth(640)
+                            pixmap = QPixmap(r"D:\shixun\sss\runs\detect\predict\image0.jpg")
+                            imgview.setPixmap(pixmap.scaledToWidth(imgview.width()))
+                            self.imgLayout.addWidget(imgview)
+                            self.predictResult = predict_result()
+                            # self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]}")
+                            if self.predictResult:
+                                self.bodyLabel.setText(f"预测结果：{self.predictResult[0]}")
+                            else:
+                                self.bodyLabel.setText("未检测到结果")
+                            self.imgLayout.addWidget(self.bodyLabel)
+                            # self.imgLayout.update()
 
-                # self.imgLayout.addLayout(self.textLayout)
-                # self.imgLayout.update()
-                # self.vBoxLayout.addLayout(self.imgLayout)
-                # self.vBoxLayout.addWidget(self.view, 0, Qt.AlignHCenter)
 
+
+                    elif file_extension == '.mp4':
+                        predict_v(self.model_path, self.predict_file_path)
+                        # self.imgLayout.update()
+                        # self.videoView = VideoWidget(self)
+                        # video_url = QUrl.fromLocalFile(r"D:\Download\video0.mp4")
+                        # # video_url = QUrl.fromLocalFile(r"D:\shixun\sss\runs\detect\predict\video0.mp4")
+                        # video_content = QMediaContent(video_url)
+                        # self.videoView.setVideo(video_content)
+                        #
+                        # self.vBoxLayout.addWidget(self.videoView)
+                        # self.videoView.play()
+
+
+                        # self.video_widget = QVideoWidget()
+                        # # 创建媒体播放器
+                        # self.media_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+                        # self.media_player.setVideoOutput(self.video_widget)
+                        # video_url = QUrl.fromLocalFile(r"D:\shixun\sss\runs\detect\predict\video0.mp4")  # 替换为你的视频文件路径
+                        # video_content = QMediaContent(video_url)
+                        # self.media_player.setMedia(video_content)
+                        # self.vBoxLayout.addWidget(self.video_widget)
+                        # self.media_player.play()
             else:
-                # if hasattr(self, 'imgLayout') and self.imgLayout:
-                #     self.imgLayout.deleteLater()
-                    # self.bodyLabel.setText('')
-                    # self.acc_bodyLabel.setText('')
                 _, file_extension = os.path.splitext(self.predict_file_path)
                 file_extension = file_extension.lower()
                 if file_extension == '.jpg':
+                    print('yan')
                     l = predict_i(self.model_path, self.predict_file_path)
                     speed = f"Preprocess time: {l['preprocess']:.2f} ms, Inference time: {l['inference']:.2f} ms, Postprocess time: {l['postprocess']:.2f} ms"
                     self.l_bodyLabel.setText(speed)
-                    # self.flipView.addImages([r"D:\shixun\sss\runs\detect\predict\image0.jpg"])
-                    # self.vBoxLayout.addWidget(self.flipView, 0, Qt.AlignHCenter)
-                    # self.imgView.setPixmap(QPixmap(r"D:\shixun\sss\runs\detect\predict\image0.jpg"))
-                    # imgView = QLabel(self)
-                    # imgView.setFixedWidth(640)
-                    # pixmap = QPixmap(r"D:\shixun\sss\runs\detect\predict\image0.jpg")
-                    # imgView.setPixmap(pixmap.scaledToWidth(imgView.width()))
-                    # self.view = imgView
-                    # self.vBoxLayout.addWidget(self.view, 0, Qt.AlignLeft)
+
+                    self.bodyLabel = StrongBodyLabel()
                     imgview = QLabel(self)
                     imgview.setFixedWidth(640)
                     pixmap = QPixmap(r"D:\shixun\sss\runs\detect\predict\image0.jpg")
                     imgview.setPixmap(pixmap.scaledToWidth(imgview.width()))
                     self.imgLayout.addWidget(imgview)
-                    # self.imgLayout.update()
+                    self.predictResult = predict_yan_result()
+                    # self.bodyLabel.setText(f" 预测结果：{self.predictResult[0]}")
+                    if self.predictResult:
+                        self.bodyLabel.setText(f"预测结果：{self.predictResult[0]}")
+                    else:
+                        self.bodyLabel.setText("未检测到结果")
+                    self.imgLayout.addWidget(self.bodyLabel)
 
 
-
-                elif file_extension == '.mp4':
-                    predict_v(self.model_path, self.predict_file_path)
-                    # self.imgLayout.update()
-                    # self.videoView = VideoWidget(self)
-                    # video_url = QUrl.fromLocalFile(r"D:\Download\video0.mp4")
-                    # # video_url = QUrl.fromLocalFile(r"D:\shixun\sss\runs\detect\predict\video0.mp4")
-                    # video_content = QMediaContent(video_url)
-                    # self.videoView.setVideo(video_content)
-                    #
-                    # self.vBoxLayout.addWidget(self.videoView)
-                    # self.videoView.play()
-
-
-                    # self.video_widget = QVideoWidget()
-                    # # 创建媒体播放器
-                    # self.media_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-                    # self.media_player.setVideoOutput(self.video_widget)
-                    # video_url = QUrl.fromLocalFile(r"D:\shixun\sss\runs\detect\predict\video0.mp4")  # 替换为你的视频文件路径
-                    # video_content = QMediaContent(video_url)
-                    # self.media_player.setMedia(video_content)
-                    # self.vBoxLayout.addWidget(self.video_widget)
-                    # self.media_player.play()
+                else:
+                    w = MessageBox("警告", "验证码识别模块目前只接受图片", self)
+                    w.yesButton.setText("确认")
+                    w.cancelButton.hide()
+                    w.buttonLayout.insertStretch(1)
+                    w.exec()
 
 
 
