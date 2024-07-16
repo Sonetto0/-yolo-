@@ -1,8 +1,13 @@
-path: D:\shixun\sss\Train
+path: D:\shixun\sss\Dataset
 train: images\train
 val: images\val
 
-batch: 8
+batch: 16
+imgsz: 320
+save_period: 10
+cache: True
+cos_lr: True
+
 
 # Classes
 names:

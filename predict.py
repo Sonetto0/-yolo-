@@ -2,6 +2,7 @@ from ultralytics import YOLO
 
 import os
 from PIL import Image
+import shutil
 import numpy as np
 
 import torch
@@ -78,6 +79,25 @@ import torch
 
 # Load a model
 
+def delete_folder(target_folder):
+    """
+    删除指定的文件夹及其内容。
+
+    Parameters:
+    target_folder (str): 要删除的目标文件夹路径。
+
+    Returns:
+    None
+    """
+    try:
+        shutil.rmtree(target_folder)
+        print(f"成功删除文件夹 {target_folder}")
+    except OSError as e:
+        print(f"删除文件夹 {target_folder} 失败: {e}")
+
+
+
+
 def get_image_paths(folder_path):
     image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']  # 可以根据需要添加其他图片格式的扩展名
     image_paths = []
@@ -110,20 +130,30 @@ def open_images(folder_path):
 
     return image_list
 
-model = YOLO("yolov8n.pt")  # load an official model
-model = YOLO(r"D:\shixun\sss\model\n100_train2.pt")  # load a custom model
 
-# img = Image.open(r"D:\shixun\sss\Test\黑AM6726.jpg")
-# img = np.array(img)
-# img = Image.fromarray(img)
 
-# Predict with the model
-# results = model(img)  # predict on an image
+def predict(model_path, predict_file_path):
+    delete_folder(r'D:\shixun\sss\runs\detect\predict')
+    # model = YOLO("yolov8n.pt")  # load an official model
+    # model = YOLO(r"D:\shixun\sss\model\n100_train2.pt")  # load a custom model
 
-model.predict(open_images(r"D:\shixun\sss\Test") , save=True, save_txt=True, imgsz=320, conf=0.5)
+    # model = YOLO(r"D:\shixun\sss\runs\detect\train4\weights\best.pt")
+    model = YOLO(model_path)
 
-# for r in results:
-#     print(r.boxes)  # print bbox predictions
+    # img = Image.open(r"D:\shixun\sss\Test\黑AM6726.jpg")
+    # img = np.array(img)
+    # img = Image.fromarray(img)
+
+    # Predict with the model
+    # results = model(img)  # predict on an image
+
+    # model.predict(open_images(r"D:\shixun\sss\Dataset0\test\images") , save=True, save_txt=True, imgsz=320, conf=0.5)
+    results = model.predict(open_images(predict_file_path), save=True, save_txt=True, save_conf=True, imgsz=640)
+
+    return results[0].speed
+
+    # for r in results:
+    #     print(r.boxes)  # print bbox predictions
 
     # confs = r.boxes.data[:, 4:6]  # Confidence and class ID of the detected objects
     # print(confs)
@@ -140,3 +170,59 @@ model.predict(open_images(r"D:\shixun\sss\Test") , save=True, save_txt=True, img
     # boxes = r.boxes.numpy()
     # print_sorted_classes(boxes, class_names)
     # print_mapped_classes(r.boxes)
+
+
+# model_path = r"D:\shixun\sss\runs\detect\train7\weights\best.pt"
+# predict_file_path = r"D:\shixun\sss\Dataset0\test\images"
+# predict(model_path, predict_file_path)
+
+
+def predict_i(model_path, predict_img_path):
+    delete_folder(r'D:\shixun\sss\runs\detect\predict')
+    # model = YOLO("yolov8n.pt")  # load an official model
+    # model = YOLO(r"D:\shixun\sss\model\n100_train2.pt")  # load a custom model
+
+    # model = YOLO(r"D:\shixun\sss\runs\detect\train4\weights\best.pt")
+    model = YOLO(model_path)
+
+    img = Image.open(predict_img_path)
+    # model.predict(img, save=True, imgsz=320, conf=0.5)
+    result = model.predict(img, save=True, imgsz=320, conf=0.25, hide_conf=True)
+
+    # result.show()
+    return result[0].speed
+
+
+def predict_v(model_path, predict_video_path):
+    # delete_folder(r'D:\shixun\sss\runs\detect\predict')
+    # model = YOLO("yolov8n.pt")  # load an official model
+    # model = YOLO(r"D:\shixun\sss\model\n100_train2.pt")  # load a custom model
+
+    # model = YOLO(r"D:\shixun\sss\runs\detect\train4\weights\best.pt")
+    model = YOLO(model_path)
+
+    # img = Image.open(predict_img_path)
+    # img = np.array(img)
+    # img = Image.fromarray(img)
+
+    # result = model(img)  # predict on an image
+    model.predict(source=predict_video_path, show=True)
+
+
+
+
+if __name__ == '__main__':
+    model_path = r"D:\shixun\sss\runs\detect\train9\weights\best.pt"
+    predict_file_path = r"D:\shixun\sss\Test"
+    predict_img_path = r"D:\shixun\sss\Test\浙B8R860.jpg"
+    predict_video_path = r"D:\Download\video0.mp4"
+
+    # predict_v(model_path, predict_video_path)
+
+    # l = predict_i(model_path, predict_img_path)
+    # print(f"Preprocess time: {l['preprocess']:.2f} ms")
+    # print(f"Inference time: {l['inference']:.2f} ms")
+    # print(f"Postprocess time: {l['postprocess']:.2f} ms")
+
+    l = predict(model_path, predict_file_path)
+    print(l)

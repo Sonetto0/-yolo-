@@ -1,3 +1,15 @@
+
+# class_names = {
+#     0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9',
+#     10: 'a', 11: 'b', 12: 'c', 13: 'd', 14: 'e', 15: 'f', 16: 'g', 17: 'h', 18: 'i', 19: 'j',
+#     20: 'k', 21: 'l', 22: 'm', 23: 'n', 24: 'o', 25: 'p', 26: 'q', 27: 'r', 28: 's', 29: 't',
+#     30: 'u', 31: 'v', 32: 'w', 33: 'x', 34: 'y', 35: 'z', 36: 'A', 37: 'B', 38: 'C', 39: 'DD',
+#     40: 'E', 41: 'F', 42: 'G', 43: 'H', 44: 'I', 45: 'J', 46: 'K', 47: 'L', 48: 'M', 49: 'N',
+#     50: 'O', 51: 'P', 52: 'Q', 53: 'R', 54: 'S', 55: 'T', 56: 'U', 57: 'V', 58: 'W', 59: 'X',
+#     60: 'Y', 61: 'Z', 62: 'D'
+# }
+
+
 # import torch
 
 import os
@@ -35,8 +47,6 @@ def get_txt_paths(folder_path):
     return sorted_paths
 
 
-
-#
 class_names = {
     0: "plate", 1: "0", 2: "1", 3: "2", 4: "3", 5: "4", 6: "5", 7: "6", 8: "7", 9: "8",
     10: "9", 11: "A", 12: "B", 13: "C", 14: "D", 15: "E", 16: "F", 17: "G", 18: "H", 19: "J",
@@ -99,8 +109,14 @@ def get_predict_results(file_path):
             if category != 0:  # 排除类别为0的数据
                 data.append((category, line.strip()))
 
+    data_sorted = sorted(data, key=lambda x: -float(x[1].split()[5]))
+
+    # Keep up to 7 rows if more than 7 rows exist
+    if len(data_sorted) > 7:
+        data_sorted = data_sorted[:7]
+
     # 按照第二个数据（索引为1）从小到大排序
-    data_sorted = sorted(data, key=lambda x: float(x[1].split()[1]))
+    data_sorted = sorted(data_sorted, key=lambda x: float(x[1].split()[1]))
 
     # 映射类别为字符串
     mapped_categories = [class_names[category] for category, _ in data_sorted]
@@ -113,25 +129,9 @@ def get_predict_results(file_path):
     # 打印输出结果
     # print(output_string)
 
-    print(file_path)
+    # print(file_path)
 
     return output_string
-
-
-# 示例用法
-folder_path = r'D:\shixun\sss\runs\detect\predict4\labels'  # 替换为实际的文件夹路径
-txt_paths = get_txt_paths(folder_path)
-print(folder_path)
-
-# print(txt_paths)
-predict_results = []
-
-for txt_path in txt_paths:
-    predict_results.append(get_predict_results(txt_path))
-
-
-print(predict_results)
-# print(len(predict_results))
 
 
 def get_image_paths(folder_path):
@@ -145,33 +145,52 @@ def get_image_paths(folder_path):
 
     return image_paths
 
-# 示例用法
-folder_path = r'D:\shixun\sss\Test'  # 注意这里使用了原始字符串(r'')来处理反斜杠转义问题
-image_paths = get_image_paths(folder_path)
+def predict_result():
+    folder_path = r'D:\shixun\sss\runs\detect\predict\labels'  # 替换为实际的文件夹路径
+    txt_paths = get_txt_paths(folder_path)
 
-# 提取不带后缀的文件名部分
-file_names_no_extension = [os.path.splitext(os.path.basename(path))[0] for path in image_paths]
+    print(txt_paths)
+    predict_results = []
 
-# 打印输出所有找到的图片文件名（不带后缀）
-print(file_names_no_extension)
+    for txt_path in txt_paths:
+        predict_results.append(get_predict_results(txt_path))
 
-
-
-
-
-if len(predict_results) == len(file_names_no_extension):
-    # 计算总预测次数
-    total_predictions = len(predict_results)
-
-    # 计算预测正确的次数
-    correct_predictions = sum(1 for pred, true in zip(predict_results, file_names_no_extension) if pred == true)
-
-    # 计算正确率
-    accuracy = correct_predictions / total_predictions
-
-    # 打印结果
-    print(f"正确率为: {accuracy:.2%}")
-else:
-    print("预测结果列表和正确结果列表长度不一致！")
+    print(predict_results)
+    # print(len(predict_results))
+    return predict_results
 
 
+
+def accuracy(folder_path):
+    predict_results = predict_result()
+
+    image_paths = get_image_paths(folder_path)
+
+    # 提取不带后缀的文件名部分
+    file_names_no_extension = [os.path.splitext(os.path.basename(path))[0] for path in image_paths]
+
+    # 打印输出所有找到的图片文件名（不带后缀）
+    print(file_names_no_extension)
+
+    if len(predict_results) == len(file_names_no_extension):
+        # 计算总预测次数
+        total_predictions = len(predict_results)
+
+        # 计算预测正确的次数
+        correct_predictions = sum(1 for pred, true in zip(predict_results, file_names_no_extension) if pred == true)
+
+        # 计算正确率
+        accuracy = correct_predictions / total_predictions
+
+        # 打印结果
+        print(f"正确率为: {accuracy:.2%}")
+        return accuracy
+    else:
+        print("预测结果列表和正确结果列表长度不一致！")
+        print(len(predict_results))
+        print(len(file_names_no_extension))
+        return 0
+
+if __name__ == '__main__':
+    folder_path = r'D:\shixun\sss\Test'
+    accuracy(folder_path)
