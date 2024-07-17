@@ -238,7 +238,7 @@ def predict_y(model_path, predict_img_path):
 
     img = Image.open(predict_img_path)
     # model.predict(img, save=True, imgsz=320, conf=0.5)
-    result = model.predict(img, save=True, imgsz=640, conf=0.25, save_txt=True, save_conf=True)
+    result = model.predict(img, save=True, imgsz=160, conf=0.25, save_txt=True, save_conf=True)
 
     # result.show()
     return result[0].speed
@@ -248,7 +248,7 @@ def predict_y(model_path, predict_img_path):
 
 
 if __name__ == '__main__':
-    model_path = r"D:\shixun\sss\runs\detect\train9\weights\best.pt"
+    model_path = r"D:\shixun\sss\model\che_v1.pt"
     # predict_file_path = r"D:\shixun\sss\Test"
     predict_img_path = r"D:\Download\rotatedimage.jpg"
     # predict_video_path = r"D:\Download\video0.mp4"

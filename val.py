@@ -4,7 +4,7 @@ from ultralytics import YOLO
 if __name__ == '__main__':
     # Load a model
     # model = YOLO("yolov8n.pt")  # load an official model
-    model = YOLO(r"D:\shixun\sss\runs\detect\train13\weights\best.pt")  # load a custom model
+    model = YOLO(r"D:\shixun\sss\model\che_v1.pt")  # load a custom model
 
     # Validate the model
     metrics = model.val()  # no arguments needed, dataset and settings remembered
@@ -20,14 +20,14 @@ if __name__ == '__main__':
     #     print(f"Recall: {metrics.box.mr}")
 
 
-    total_fps = 0.0
-    num = 10
-    for _ in range(num):
-        # 这里假设model.val()返回一个metrics对象，其中包含了fps信息
-        metrics = model.val()
-        fps = metrics.get_latency()
-        total_fps += fps
-    # 计算平均fps
-    average_fps = 1000 / total_fps * num
-    # 打印结果
-    print(f'Average FPS over {num} runs: {average_fps:.2f}')
+    # total_fps = 0.0
+    # num = 10
+    # for _ in range(num):
+    #     # 这里假设model.val()返回一个metrics对象，其中包含了fps信息
+    #     metrics = model.val()
+    #     fps = metrics.get_latency()
+    #     total_fps += fps
+    # # 计算平均fps
+    # average_fps = 1000 / total_fps * num
+    # # 打印结果
+    # print(f'Average FPS over {num} runs: {average_fps:.2f}')

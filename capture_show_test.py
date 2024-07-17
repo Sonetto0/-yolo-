@@ -3,7 +3,7 @@ from ultralytics import YOLO
 from cv2 import getTickCount, getTickFrequency
 
 
-model_path = r"D:\shixun\sss\runs\detect\train9\weights\best.pt"
+model_path = r"D:\shixun\sss\model\che_v1.pt"
 model = YOLO(model_path)
 
 

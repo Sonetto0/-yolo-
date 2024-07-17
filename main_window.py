@@ -169,7 +169,7 @@ class Window(AcrylicWindow):
     def set_model_path(self, index):
         print(index)
         if index == 1:
-            self.model_path = "D:\shixun\sss\model\che_v1.pt"
+            self.model_path = r"D:\shixun\sss\model\che_v1.pt"
             self.mode = True
         elif index == 0:
             self.model_path = r"D:\shixun\sss\model\yan_v1.pt"
